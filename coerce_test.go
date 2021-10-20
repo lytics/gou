@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type aliasedStringSlice []string
@@ -21,6 +22,7 @@ func TestCoerce(t *testing.T) {
 		"emptystring":        "",
 		"stringslice":        []string{"one", "two", "three"},
 		"aliasedstringslice": aliasedStringSlice{"one", "two", "three"},
+		"mongostringslice":   primitive.A{"one", "two", "three"},
 		"aliasedintslice":    aliasedIntSlice{1, 2, 3},
 		"aliasedfloatslice":  aliasedFloatSlice{1.1, 2.2, 3.3},
 	}
@@ -44,6 +46,7 @@ func TestCoerce(t *testing.T) {
 
 	assert.EqualValues(t, []string{"one", "two", "three"}, CoerceStrings(data["stringslice"]))
 	assert.EqualValues(t, []string{"one", "two", "three"}, CoerceStrings(data["aliasedstringslice"]))
+	assert.EqualValues(t, []string{"one", "two", "three"}, CoerceStrings(data["mongostringslice"]))
 	assert.Equal(t, []string{"4"}, CoerceStrings(data["int"]), "get int as []string: %v", data["int"])
 
 	assert.Equal(t, []float64{float64(4)}, CoerceFloats(data["int"]), "get int as []float64: %v", data["int"])

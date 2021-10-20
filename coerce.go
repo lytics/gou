@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Coerce types (string,int,int64, float, []byte) into String type
@@ -59,8 +61,17 @@ func CoerceStringShort(v interface{}) string {
 func castUnderlying(v interface{}, targetType reflect.Type) interface{} {
 	refV := reflect.ValueOf(v)
 	if refV.CanConvert(targetType) {
-		v = refV.Convert(targetType).Interface()
+		return refV.Convert(targetType).Interface()
 	}
+
+	if mongoSlice, ok := v.(primitive.A); ok {
+		asSlice := make([]interface{}, len(mongoSlice), len(mongoSlice))
+		for i, d := range mongoSlice {
+			asSlice[i] = d
+		}
+		return asSlice
+	}
+
 	return v
 }
 
