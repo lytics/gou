@@ -130,6 +130,19 @@ func (m *JsonRawWriter) Raw() json.RawMessage {
 //
 type JsonHelper map[string]interface{}
 
+func (j JsonHelper) EncodeSpanner() (interface{}, error) {
+	r, err := json.Marshal(j)
+	return string(r), err
+}
+
+func (j *JsonHelper) DecodeSpanner(val interface{}) (err error) {
+	b, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("failed to decode customField: %v", val)
+	}
+	return json.Unmarshal([]byte(b), j)
+}
+
 func NewJsonHelper(b []byte) JsonHelper {
 	jh := make(JsonHelper)
 	json.Unmarshal(b, &jh)
@@ -178,9 +191,9 @@ func NewJsonHelperFromResp(resp *http.Response) (JsonHelper, error) {
 }
 
 func jsonList(v interface{}) []interface{} {
-	switch v.(type) {
+	switch v := v.(type) {
 	case []interface{}:
-		return v.([]interface{})
+		return v
 	}
 	return nil
 }
@@ -270,10 +283,10 @@ func (j JsonHelper) Get(n string) interface{} {
 }
 
 // Get a Helper from a string path
-func (j JsonHelper) Helper(n string) JsonHelper {
+func (j JsonHelper) HelperSafe(n string) (JsonHelper, bool) {
 	v := j.Get(n)
 	if v == nil {
-		return nil
+		return nil, false
 	}
 	switch vt := v.(type) {
 	case map[string]interface{}:
@@ -281,19 +294,24 @@ func (j JsonHelper) Helper(n string) JsonHelper {
 		for n, val := range vt {
 			cn[n] = val
 		}
-		return cn
+		return cn, true
 	case map[string]string:
 		cn := JsonHelper{}
 		for n, val := range vt {
 			cn[n] = val
 		}
-		return cn
+		return cn, true
 	case JsonHelper:
-		return vt
+		return vt, true
 	default:
 		//Infof("wrong type: %T", v)
 	}
-	return nil
+	return nil, false
+}
+
+func (j JsonHelper) Helper(n string) JsonHelper {
+	v, _ := j.HelperSafe(n)
+	return v
 }
 
 // Get list of Helpers at given name.  Trys to coerce into
@@ -437,11 +455,11 @@ func (j JsonHelper) Uint64Safe(n string) (uint64, bool) {
 func (j JsonHelper) BoolSafe(n string) (val bool, ok bool) {
 	v := j.Get(n)
 	if v != nil {
-		switch v.(type) {
+		switch v := v.(type) {
 		case bool:
-			return v.(bool), true
+			return v, true
 		case string:
-			if s := v.(string); len(s) > 0 {
+			if s := v; len(s) > 0 {
 				if b, err := strconv.ParseBool(s); err == nil {
 					return b, true
 				}
@@ -461,27 +479,12 @@ func (j JsonHelper) Bool(n string) bool {
 }
 
 func (j JsonHelper) Map(n string) map[string]interface{} {
-	v := j.Get(n)
-	if v == nil {
-		return nil
-	}
-	m, ok := v.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return m
+	return map[string]interface{}(j.Helper(n))
 }
 
 func (j JsonHelper) MapSafe(n string) (map[string]interface{}, bool) {
-	v := j.Get(n)
-	if v == nil {
-		return nil, false
-	}
-	m, ok := v.(map[string]interface{})
-	if !ok {
-		return nil, false
-	}
-	return m, true
+	v, ok := j.HelperSafe(n)
+	return map[string]interface{}(v), ok
 }
 
 func (j JsonHelper) PrettyJson() []byte {
