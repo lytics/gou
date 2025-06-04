@@ -9,7 +9,7 @@ import (
 
 func TestThrottleer(t *testing.T) {
 	th := NewThrottler(10, 10*time.Second)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		thb, tc := th.Throttle()
 		assert.True(t, thb == false, "Should not throttle %v", i)
 		assert.True(t, tc < 10, "Throttle count should remain below 10 %v", tc)
@@ -19,7 +19,7 @@ func TestThrottleer(t *testing.T) {
 	throttled := 0
 	th = NewThrottler(10, 1*time.Second)
 	// We are going to loop 20 times, first 10 should make it, next 10 throttled
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		LogThrottleKey(WARN, 10, "throttle", "hello %v", i)
 		thb, tc := th.Throttle()
 
@@ -52,7 +52,7 @@ func TestThrottler2(t *testing.T) {
 	}
 
 	// We are going to loop 20 times, first 10 should make it, next 10 throttled
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 
 		LogThrottleKey(WARN, 10, tkey, "hello %v", i)
 

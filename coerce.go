@@ -12,7 +12,7 @@ import (
 )
 
 // Coerce types (string,int,int64, float, []byte) into String type
-func CoerceString(v interface{}) (string, error) {
+func CoerceString(v any) (string, error) {
 	switch val := v.(type) {
 	case string:
 		if val == "null" || val == "NULL" {
@@ -53,19 +53,19 @@ func CoerceString(v interface{}) (string, error) {
 }
 
 // Coerce type to string, returning zero length string if error or nil
-func CoerceStringShort(v interface{}) string {
+func CoerceStringShort(v any) string {
 	val, _ := CoerceString(v)
 	return val
 }
 
-func castUnderlying(v interface{}, targetType reflect.Type) interface{} {
+func castUnderlying(v any, targetType reflect.Type) any {
 	refV := reflect.ValueOf(v)
 	if refV.CanConvert(targetType) {
 		return refV.Convert(targetType).Interface()
 	}
 
 	if mongoSlice, ok := v.(primitive.A); ok {
-		asSlice := make([]interface{}, len(mongoSlice), len(mongoSlice))
+		asSlice := make([]any, len(mongoSlice), len(mongoSlice))
 		for i, d := range mongoSlice {
 			asSlice[i] = d
 		}
@@ -76,7 +76,7 @@ func castUnderlying(v interface{}, targetType reflect.Type) interface{} {
 }
 
 // CoerceStrings Coerce type to strings, will split on comma by default.
-func CoerceStrings(v interface{}) []string {
+func CoerceStrings(v any) []string {
 	v = castUnderlying(v, reflect.TypeOf([]string{}))
 
 	switch val := v.(type) {
@@ -87,7 +87,7 @@ func CoerceStrings(v interface{}) []string {
 		return strings.Split(val, ",")
 	case []string:
 		return val
-	case []interface{}:
+	case []any:
 		sva := make([]string, 0)
 		for _, av := range val {
 			switch aval := av.(type) {
@@ -106,7 +106,7 @@ func CoerceStrings(v interface{}) []string {
 	}
 }
 
-func CoerceFloats(v interface{}) []float64 {
+func CoerceFloats(v any) []float64 {
 	v = castUnderlying(v, reflect.TypeOf([]float64{}))
 
 	switch val := v.(type) {
@@ -123,7 +123,7 @@ func CoerceFloats(v interface{}) []float64 {
 			}
 		}
 		return fa
-	case []interface{}:
+	case []any:
 		fa := make([]float64, 0)
 		for _, av := range val {
 			switch aval := av.(type) {
@@ -145,7 +145,7 @@ func CoerceFloats(v interface{}) []float64 {
 	return nil
 }
 
-func CoerceFloat(v interface{}) (float64, error) {
+func CoerceFloat(v any) (float64, error) {
 	switch val := v.(type) {
 	case int:
 		return float64(val), nil
@@ -182,19 +182,19 @@ func CoerceFloat(v interface{}) (float64, error) {
 	}
 	return 0, fmt.Errorf("Could not Coerce Value: %v", v)
 }
-func CoerceFloatShort(v interface{}) float64 {
+func CoerceFloatShort(v any) float64 {
 	val, _ := CoerceFloat(v)
 	return val
 }
 
-func CoerceInt64(v interface{}) (int64, error) {
+func CoerceInt64(v any) (int64, error) {
 	val, ok := valToInt64(v)
 	if ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("Could not coerce to int64: %v", v)
 }
-func CoerceInt64Short(v interface{}) int64 {
+func CoerceInt64Short(v any) int64 {
 	val, ok := valToInt64(v)
 	if ok {
 		return val
@@ -202,14 +202,14 @@ func CoerceInt64Short(v interface{}) int64 {
 	return 0
 }
 
-func CoerceInt(v interface{}) (int, error) {
+func CoerceInt(v any) (int, error) {
 	val, ok := valToInt(v)
 	if ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("Could not coerce to int64: %v", v)
 }
-func CoerceIntShort(v interface{}) int {
+func CoerceIntShort(v any) int {
 	val, ok := valToInt(v)
 	if ok {
 		return val
@@ -217,7 +217,7 @@ func CoerceIntShort(v interface{}) int {
 	return 0
 }
 
-func CoerceInts(v interface{}) []int {
+func CoerceInts(v any) []int {
 	v = castUnderlying(v, reflect.TypeOf([]int{}))
 
 	switch val := v.(type) {
@@ -232,7 +232,7 @@ func CoerceInts(v interface{}) []int {
 			}
 		}
 		return iva
-	case []interface{}:
+	case []any:
 		iva := make([]int, 0)
 		for _, av := range val {
 			avAsInt, ok := valToInt(av)
@@ -247,7 +247,7 @@ func CoerceInts(v interface{}) []int {
 }
 
 // Coerce a val(interface{}) into a Uint64
-func CoerceUint(v interface{}) (uint64, error) {
+func CoerceUint(v any) (uint64, error) {
 	u64, ok := valToUint64(v)
 	if !ok {
 		return 0, fmt.Errorf("Could not Coerce %v", v)
@@ -256,14 +256,14 @@ func CoerceUint(v interface{}) (uint64, error) {
 }
 
 // Coerce a Val(interface{}) into Uint64
-func CoerceUintShort(v interface{}) uint64 {
+func CoerceUintShort(v any) uint64 {
 	val, _ := CoerceUint(v)
 	return val
 }
 
 // Given any numeric type (float*, int*, uint*, string) return an int. Returns false if it would
 // overflow or if the the argument is not numeric.
-func valToInt(i interface{}) (int, bool) {
+func valToInt(i any) (int, bool) {
 	i64, ok := valToInt64(i)
 	if !ok {
 		return -1, false
@@ -276,7 +276,7 @@ func valToInt(i interface{}) (int, bool) {
 
 // Given any simple type (float*, int*, uint*, string, []byte, json.RawMessage) return an int64.
 // Returns false if it would overflow or if the the argument is not numeric.
-func valToInt64(i interface{}) (int64, bool) {
+func valToInt64(i any) (int64, bool) {
 	switch x := i.(type) {
 	case float32:
 		return int64(x), true
@@ -341,7 +341,7 @@ func valToInt64(i interface{}) (int64, bool) {
 
 // Given any simple type (float*, int*, uint*, string, []byte, json.RawMessage) return an int64.
 // Returns false if it would overflow or if the the argument is not numeric.
-func valToUint64(i interface{}) (uint64, bool) {
+func valToUint64(i any) (uint64, bool) {
 	switch x := i.(type) {
 	case float32:
 		return uint64(x), true
