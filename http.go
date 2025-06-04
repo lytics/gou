@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -21,7 +20,7 @@ func Fetch(url string) (ret []byte, err error) {
 		Log(WARN, err.Error())
 		return
 	}
-	ret, err = ioutil.ReadAll(resp.Body)
+	ret, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -42,13 +41,13 @@ func FetchResp(url string) (ret []byte, err error, resp *http.Response) {
 	if resp == nil || resp.Body == nil {
 		return
 	}
-	ret, err = ioutil.ReadAll(resp.Body)
+	ret, err = io.ReadAll(resp.Body)
 	return
 }
 
 // Simple Fetch Wrapper, given a url it returns Helper, error
 // Sends as type application/json, interprets whatever datatype is sent in appropriately
-func JsonHelperHttp(method, urlStr string, data interface{}) (JsonHelper, error) {
+func JsonHelperHttp(method, urlStr string, data any) (JsonHelper, error) {
 	var body io.Reader
 	if data != nil {
 		switch val := data.(type) {
@@ -84,7 +83,7 @@ func JsonHelperHttp(method, urlStr string, data interface{}) (JsonHelper, error)
 
 // posts an application/json to url with body
 // ie:   type = application/json
-func PostJson(postUrl string, data interface{}) (ret string, err error, resp *http.Response) {
+func PostJson(postUrl string, data any) (ret string, err error, resp *http.Response) {
 	var buf io.Reader
 	if data != nil {
 		switch val := data.(type) {
@@ -117,7 +116,7 @@ func PostJson(postUrl string, data interface{}) (ret string, err error, resp *ht
 		Log(WARN, err.Error())
 		return "", err, resp
 	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err, resp
 	}
@@ -147,7 +146,7 @@ func DeleteJson(url, body string) (ret string, err error, resp *http.Response) {
 		Log(WARN, err.Error())
 		return "", err, resp
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err, resp
 	}
@@ -169,7 +168,7 @@ func PostForm(url, body string) (ret string, err error, resp *http.Response) {
 		Log(WARN, url, "  ", body, "    ", err.Error())
 		return "", err, resp
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err, resp
 	}
@@ -196,7 +195,7 @@ func PutJson(url, body string) (ret string, err error, resp *http.Response) {
 		Log(WARN, err.Error())
 		return "", err, resp
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err, resp
 	}

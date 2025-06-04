@@ -1,40 +1,31 @@
 package gou
 
 import (
-	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetupLogToFile(t *testing.T) {
-	tmpf, err := ioutil.TempFile("", "goutest")
-	if err != nil {
-		t.Fatalf("error creating log file: %v\n", err)
-	}
+	tmpf, err := os.CreateTemp("", "goutest")
+	require.NoError(t, err, "error creating temp file")
 	defer os.Remove(tmpf.Name())
 
 	SetupLoggingFile(tmpf, "debug")
-	logStr := "hihi"
+	const logStr = "hihi"
 	Infof(logStr)
 
 	// Flush file buffer to disk
 	err = tmpf.Sync()
-	if err != nil {
-		t.Errorf("error syncing tmpf: %v", err)
-	}
+	require.NoError(t, err, "error syncing tmpf")
 	time.Sleep(1 * time.Second)
 
 	// Read tmp file and confirm log message was written
-	bytes, err := ioutil.ReadFile(tmpf.Name())
-	if err != nil {
-		t.Errorf("error reading temp file[%s]: %v\n", tmpf.Name(), err)
-	}
+	bytes, err := os.ReadFile(tmpf.Name())
+	require.NoError(t, err, "error reading temp file")
 
 	logFileBytes := string(bytes)
-	if !strings.Contains(logFileBytes, logStr) {
-		t.Logf("logfile:\n%s", logFileBytes)
-		t.Errorf("%s not found in logfile %s\n", logStr, tmpf.Name())
-	}
+	require.Contains(t, logFileBytes, logStr, "log message not found in temp file")
 }

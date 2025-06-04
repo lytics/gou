@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"maps"
 	"math"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
 // Convert a slice of bytes into an array by ensuring it is wrapped
-//  with []
+//
+//	with []
 func MakeJsonList(b []byte) []byte {
 	if !bytes.HasPrefix(b, []byte{'['}) {
 		b = append([]byte{'['}, b...)
@@ -24,7 +24,7 @@ func MakeJsonList(b []byte) []byte {
 	return b
 }
 
-func JsonString(v interface{}) string {
+func JsonString(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return `""`
@@ -50,7 +50,8 @@ func firstNonWsRune(by []byte) (r rune, ok bool) {
 }
 
 // Determines if the bytes is a json array, only looks at prefix
-//  not parsing the entire thing
+//
+//	not parsing the entire thing
 func IsJson(by []byte) bool {
 	firstRune, ok := firstNonWsRune(by)
 	if !ok {
@@ -63,7 +64,8 @@ func IsJson(by []byte) bool {
 }
 
 // Determines if the bytes is a json array, only looks at prefix
-//  not parsing the entire thing
+//
+//	not parsing the entire thing
 func IsJsonArray(by []byte) bool {
 	firstRune, ok := firstNonWsRune(by)
 	if !ok {
@@ -86,56 +88,43 @@ func IsJsonObject(by []byte) bool {
 	return false
 }
 
-type JsonRawWriter struct {
-	bytes.Buffer
-}
-
-func (m *JsonRawWriter) MarshalJSON() ([]byte, error) {
-	return m.Bytes(), nil
-}
-
-func (m *JsonRawWriter) Raw() json.RawMessage {
-	return json.RawMessage(m.Bytes())
-}
-
 // A wrapper around a map[string]interface{} to facilitate coercion
 // of json data to what you want
 //
 // allows usage such as this
 //
-//		jh := NewJsonHelper([]byte(`{
-//			"name":"string",
-//			"ints":[1,5,9,11],
-//			"int":1,
-//			"int64":1234567890,
-//			"MaxSize" : 1048576,
+//	jh := NewJsonHelper([]byte(`{
+//		"name":"string",
+//		"ints":[1,5,9,11],
+//		"int":1,
+//		"int64":1234567890,
+//		"MaxSize" : 1048576,
+//		"strings":["string1"],
+//		"nested":{
+//			"nest":"string2",
 //			"strings":["string1"],
-//			"nested":{
-//				"nest":"string2",
-//				"strings":["string1"],
-//				"int":2,
-//				"list":["value"],
-//				"nest2":{
-//					"test":"good"
-//				}
-//			},
-//			"nested2":[
-//				{"sub":5}
-//			]
-//		}`)
+//			"int":2,
+//			"list":["value"],
+//			"nest2":{
+//				"test":"good"
+//			}
+//		},
+//		"nested2":[
+//			{"sub":5}
+//		]
+//	}`)
 //
-//		i := jh.Int("nested.int")  // 2
-//		i2 := jh.Int("ints[1]")    // 5   array position 1 from [1,5,9,11]
-//		s := jh.String("nested.nest")  // "string2"
-//
-type JsonHelper map[string]interface{}
+//	i := jh.Int("nested.int")  // 2
+//	i2 := jh.Int("ints[1]")    // 5   array position 1 from [1,5,9,11]
+//	s := jh.String("nested.nest")  // "string2"
+type JsonHelper map[string]any
 
-func (j JsonHelper) EncodeSpanner() (interface{}, error) {
+func (j JsonHelper) EncodeSpanner() (any, error) {
 	r, err := json.Marshal(j)
 	return string(r), err
 }
 
-func (j *JsonHelper) DecodeSpanner(val interface{}) (err error) {
+func (j *JsonHelper) DecodeSpanner(val any) (err error) {
 	b, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("failed to decode customField: %v", val)
@@ -161,14 +150,6 @@ func NewJsonHelpers(b []byte) []JsonHelper {
 	return jhl
 }
 
-func NewJsonHelperMapString(m map[string]string) JsonHelper {
-	jh := make(JsonHelper)
-	for k, v := range m {
-		jh[k] = v
-	}
-	return jh
-}
-
 // Make a JsonHelper from http response.   This will automatically
 // close the response body
 func NewJsonHelperFromResp(resp *http.Response) (JsonHelper, error) {
@@ -177,7 +158,7 @@ func NewJsonHelperFromResp(resp *http.Response) (JsonHelper, error) {
 		return jh, fmt.Errorf("No response or response body to read")
 	}
 	defer resp.Body.Close()
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -190,17 +171,17 @@ func NewJsonHelperFromResp(resp *http.Response) (JsonHelper, error) {
 	return jh, nil
 }
 
-func jsonList(v interface{}) []interface{} {
+func jsonList(v any) []any {
 	switch v := v.(type) {
-	case []interface{}:
+	case []any:
 		return v
 	}
 	return nil
 }
 
-func jsonEntry(name string, v interface{}) (interface{}, bool) {
+func jsonEntry(name string, v any) (any, bool) {
 	switch val := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		if root, ok := val[name]; ok {
 			return root, true
 		} else {
@@ -208,7 +189,7 @@ func jsonEntry(name string, v interface{}) (interface{}, bool) {
 		}
 	case JsonHelper:
 		return val.Get(name), true
-	case []interface{}:
+	case []any:
 		return v, true
 	default:
 		Debug("no type? ", name, " ", v)
@@ -219,11 +200,11 @@ func jsonEntry(name string, v interface{}) (interface{}, bool) {
 // Get the key (or keypath) value as interface, mostly used
 // internally through String, etc methods
 //
-//    jh.Get("name.subname")
-//    jh.Get("name/subname")
-//    jh.Get("name.arrayname[1]")
-//    jh.Get("name.arrayname[]")
-func (j JsonHelper) Get(n string) interface{} {
+//	jh.Get("name.subname")
+//	jh.Get("name/subname")
+//	jh.Get("name.arrayname[1]")
+//	jh.Get("name.arrayname[]")
+func (j JsonHelper) Get(n string) any {
 	if len(j) == 0 {
 		return nil
 	}
@@ -236,7 +217,7 @@ func (j JsonHelper) Get(n string) interface{} {
 	} else {
 		parts = strings.Split(n, ".")
 	}
-	var root interface{}
+	var root any
 	var err error
 	var ok, isList, listEntry bool
 	var ln, st, idx int
@@ -289,11 +270,9 @@ func (j JsonHelper) HelperSafe(n string) (JsonHelper, bool) {
 		return nil, false
 	}
 	switch vt := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		cn := JsonHelper{}
-		for n, val := range vt {
-			cn[n] = val
-		}
+		maps.Copy(cn, vt)
 		return cn, true
 	case map[string]string:
 		cn := JsonHelper{}
@@ -322,16 +301,16 @@ func (j JsonHelper) Helpers(n string) []JsonHelper {
 		return nil
 	}
 	switch val := v.(type) {
-	case []map[string]interface{}:
+	case []map[string]any:
 		hl := make([]JsonHelper, 0)
 		for _, mapVal := range val {
 			hl = append(hl, mapVal)
 		}
 		return hl
-	case []interface{}:
+	case []any:
 		jhl := make([]JsonHelper, 0)
 		for _, item := range val {
-			if jh, ok := item.(map[string]interface{}); ok {
+			if jh, ok := item.(map[string]any); ok {
 				jhl = append(jhl, jh)
 			}
 		}
@@ -342,16 +321,16 @@ func (j JsonHelper) Helpers(n string) []JsonHelper {
 }
 
 // Gets slice of interface{}
-func (j JsonHelper) List(n string) []interface{} {
+func (j JsonHelper) List(n string) []any {
 	v := j.Get(n)
 	switch val := v.(type) {
 	case []string:
-		il := make([]interface{}, len(val))
+		il := make([]any, len(val))
 		for i, val := range val {
 			il[i] = val
 		}
 		return il
-	case []interface{}:
+	case []any:
 		return val
 	}
 	return nil
@@ -478,13 +457,13 @@ func (j JsonHelper) Bool(n string) bool {
 	return val
 }
 
-func (j JsonHelper) Map(n string) map[string]interface{} {
-	return map[string]interface{}(j.Helper(n))
+func (j JsonHelper) Map(n string) map[string]any {
+	return map[string]any(j.Helper(n))
 }
 
-func (j JsonHelper) MapSafe(n string) (map[string]interface{}, bool) {
+func (j JsonHelper) MapSafe(n string) (map[string]any, bool) {
 	v, ok := j.HelperSafe(n)
-	return map[string]interface{}(v), ok
+	return map[string]any(v), ok
 }
 
 func (j JsonHelper) PrettyJson() []byte {
@@ -505,12 +484,20 @@ func (j JsonHelper) HasKey(name string) bool {
 	return false
 }
 
+// HasKeyV2 doesn't assume path is a keypath, but rather a single top-level key we're looking for
+func (j JsonHelper) HasKeyV2(name string) bool {
+	if _, ok := j[name]; ok {
+		return true
+	}
+	return false
+}
+
 // GobDecode overwrites the receiver, which must be a pointer,
 // with the value represented by the byte slice, which was written
 // by GobEncode, usually for the same concrete type.
 // GobDecode([]byte) error
 func (j *JsonHelper) GobDecode(data []byte) error {
-	var mv map[string]interface{}
+	var mv map[string]any
 	if err := json.Unmarshal(data, &mv); err != nil {
 		return err
 	}
@@ -537,83 +524,3 @@ const (
 	MinInt  = -MaxInt - 1            // either -1 << 31 or -1 << 63
 	MaxUint = 1<<BitsPerWord - 1     // either 1<<32 - 1 or 1<<64 - 1
 )
-
-func flattenHelper(uv url.Values, jh JsonHelper, pre string) error {
-	for k, v := range jh {
-		if err := flattenJsonValue(uv, v, pre+k); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-func flattenJsonMap(uv url.Values, jsonMap map[string]interface{}, pre string) error {
-	for k, v := range jsonMap {
-		if err := flattenJsonValue(uv, v, pre+k); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func flattenJsonValue(uv url.Values, v interface{}, k string) error {
-	// TODO:  all these ints aren't possible are they?
-	switch x := v.(type) {
-	case []string:
-		uv[k] = x
-	// case []interface{}:
-	// 	sva := make([]string, 0)
-	// 	for _, av := range x {
-	// 		if err := flattenJsonValue(n, av, k); err != nil {
-	// 			return nil
-	// 		}
-	// 	}
-	// 	if len(sva) > 0 {
-	// 		uv[k] = sva
-	// 	}
-	case map[string]bool:
-		// what to do?
-		Info("not implemented: [string]bool")
-	case map[string]interface{}:
-		if len(x) > 0 {
-			if err := flattenJsonMap(uv, x, k+"."); err != nil {
-				return err
-			}
-		}
-	case string:
-		uv.Set(k, x)
-	case bool:
-		if x == true {
-			uv.Set(k, "t")
-		} else {
-			uv.Set(k, "f")
-		}
-	case int:
-		uv.Set(k, strconv.FormatInt(int64(x), 10))
-	case int8:
-		uv.Set(k, strconv.FormatInt(int64(x), 10))
-	case int16:
-		uv.Set(k, strconv.FormatInt(int64(x), 10))
-	case int32:
-		uv.Set(k, strconv.FormatInt(int64(x), 10))
-	case int64:
-		uv.Set(k, strconv.FormatInt(x, 10))
-	case uint:
-		uv.Set(k, strconv.FormatUint(uint64(x), 10))
-	case uint8:
-		uv.Set(k, strconv.FormatUint(uint64(x), 10))
-	case uint16:
-		uv.Set(k, strconv.FormatUint(uint64(x), 10))
-	case uint32:
-		uv.Set(k, strconv.FormatUint(uint64(x), 10))
-	case uint64:
-		uv.Set(k, strconv.FormatUint(x, 10))
-	case float32:
-		uv.Set(k, strconv.FormatFloat(float64(x), 'f', -1, 64))
-	case float64:
-		uv.Set(k, strconv.FormatFloat(x, 'f', -1, 64))
-	default:
-		// what types don't we support?
-		//  []interface{}
-	}
-	return nil
-}

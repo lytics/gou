@@ -13,7 +13,7 @@ type aliasedFloatSlice []float64
 
 func TestCoerce(t *testing.T) {
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"int":                4,
 		"float":              45.3,
 		"string":             "22",
