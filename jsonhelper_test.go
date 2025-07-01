@@ -23,7 +23,7 @@ func init() {
 	SetColorOutput()
 	//SetLogger(log.New(os.Stderr, "", log.Ltime|log.Lshortfile), "debug")
 	// create test data
-	json.Unmarshal([]byte(`{
+	_ = json.Unmarshal([]byte(`{
 		"name":"aaron",
 		"nullstring":null,
 		"ints":[1,2,3,4],
@@ -50,28 +50,6 @@ func init() {
 		],
 		"period.name":"value"
 	}`), &jh)
-}
-
-func TestJsonRawWriter(t *testing.T) {
-	var buf bytes.Buffer
-	buf.WriteString(`"hello"`)
-	raw := json.RawMessage(buf.Bytes())
-	bya, _ := json.Marshal(&buf)
-	Debug(string(bya))
-	bya, _ = json.Marshal(&raw)
-	Debug(string(bya))
-
-	/*
-		bya, err := json.Marshal(buf)
-		assert.True(t,string(bya) == `"hello"`, t, "Should be hello but was %s", string(bya))
-		Debug(string(buf.Bytes()), err)
-		var jrw JsonRawWriter
-		jrw.WriteString(`"hello"`)
-		Debug(jrw.Raw())
-		bya, err = json.Marshal(jrw.Raw())
-		assert.True(t,string(bya) == `"hello"`, t, "Should be hello but was %s", string(bya))
-		Debug(string(jrw.Bytes()), err)
-	*/
 }
 
 func TestJsonHelper(t *testing.T) {
@@ -115,9 +93,9 @@ func TestJsonHelper(t *testing.T) {
 	l := jh.List("nested2")
 	assert.True(t, len(l) == 1, "get list")
 
-	fv, ok := jh.Float64Safe("name")
+	_, ok = jh.Float64Safe("name")
 	assert.True(t, !ok, "floatsafe not ok")
-	fv, ok = jh.Float64Safe("float64")
+	fv, ok := jh.Float64Safe("float64")
 	assert.True(t, ok, "floatsafe ok")
 	assert.True(t, CloseEnuf(fv, 123.456), "floatsafe value %v", fv)
 	fv = jh.Float64("float64")

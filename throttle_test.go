@@ -46,7 +46,7 @@ func TestThrottler2(t *testing.T) {
 	logThrottles[tkey] = th
 	throttleMu.Unlock()
 
-	th, ok := logThrottles[tkey]
+	_, ok := logThrottles[tkey]
 	if !ok {
 		t.Errorf("Throttle key %s not created!", tkey)
 	}

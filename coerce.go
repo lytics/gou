@@ -65,10 +65,8 @@ func castUnderlying(v any, targetType reflect.Type) any {
 	}
 
 	if mongoSlice, ok := v.(primitive.A); ok {
-		asSlice := make([]any, len(mongoSlice), len(mongoSlice))
-		for i, d := range mongoSlice {
-			asSlice[i] = d
-		}
+		asSlice := make([]any, len(mongoSlice))
+		copy(asSlice, mongoSlice)
 		return asSlice
 	}
 

@@ -41,6 +41,8 @@ LogColor         = map[int]string{FATAL: "\033[0m\033[37m",
 \e]PFdedede
 */
 
+type logContextKeyType struct{}
+
 var (
 	LogLevel     int = ERROR
 	EMPTY        struct{}
@@ -60,7 +62,7 @@ var (
 		INFO:  "[INFO] ",
 		DEBUG: "[DEBUG] ",
 	}
-	logContextKey                 = "log_prefix"
+	logContextKey                 = logContextKeyType{}
 	escapeNewlines bool           = false
 	postFix                       = "" //\033[0m
 	LogLevelWords  map[string]int = map[string]int{"fatal": 0, "error": 1, "warn": 2, "info": 3, "debug": 4, "none": -1}
@@ -161,12 +163,14 @@ func LogLevelSet(levelWord string) {
 
 // NewContext returns a new Context carrying contextual log message
 // that gets prefixed to log statements.
+// Deprecated: Use zap logging
 func NewContext(ctx context.Context, msg string) context.Context {
 	return context.WithValue(ctx, logContextKey, msg)
 }
 
 // NewContextWrap returns a new Context carrying contextual log message
 // that gets prefixed to log statements.
+// Deprecated: Use zap logging
 func NewContextWrap(ctx context.Context, msg string) context.Context {
 	logContext, ok := ctx.Value(logContextKey).(string)
 	if ok {
@@ -182,6 +186,7 @@ func FromContext(ctx context.Context) string {
 }
 
 // Log at debug level
+// Deprecated: Use zap logging
 func Debug(v ...any) {
 	if LogLevel >= 4 {
 		DoLog(3, DEBUG, fmt.Sprint(v...))
@@ -189,6 +194,7 @@ func Debug(v ...any) {
 }
 
 // Debug log formatted
+// Deprecated: Use zap logging
 func Debugf(format string, v ...any) {
 	if LogLevel >= 4 {
 		DoLog(3, DEBUG, fmt.Sprintf(format, v...))
@@ -196,6 +202,7 @@ func Debugf(format string, v ...any) {
 }
 
 // Debug log formatted context writer
+// Deprecated: Use zap logging
 func DebugCtx(ctx context.Context, format string, v ...any) {
 	if LogLevel >= 4 {
 		lc := FromContext(ctx)
@@ -206,6 +213,7 @@ func DebugCtx(ctx context.Context, format string, v ...any) {
 	}
 }
 
+// Deprecated: Use zap logging
 func DebugT(lineCt int) {
 	if LogLevel >= 4 {
 		DoLog(3, DEBUG, fmt.Sprint("\n", PrettyStack(lineCt)))
@@ -213,6 +221,7 @@ func DebugT(lineCt int) {
 }
 
 // Log at info level
+// Deprecated: Use zap logging
 func Info(v ...any) {
 	if LogLevel >= 3 {
 		DoLog(3, INFO, fmt.Sprint(v...))
@@ -220,6 +229,7 @@ func Info(v ...any) {
 }
 
 // info log formatted
+// Deprecated: Use zap logging
 func Infof(format string, v ...any) {
 	if LogLevel >= 3 {
 		DoLog(3, INFO, fmt.Sprintf(format, v...))
@@ -227,6 +237,7 @@ func Infof(format string, v ...any) {
 }
 
 // Info log formatted context writer
+// Deprecated: Use zap logging
 func InfoCtx(ctx context.Context, format string, v ...any) {
 	if LogLevel >= 3 {
 		lc := FromContext(ctx)
@@ -238,6 +249,7 @@ func InfoCtx(ctx context.Context, format string, v ...any) {
 }
 
 // Info Trace
+// Deprecated: Use zap logging
 func InfoT(lineCt int) {
 	if LogLevel >= 3 {
 		DoLog(3, INFO, fmt.Sprint("\n", PrettyStack(lineCt)))
@@ -245,6 +257,7 @@ func InfoT(lineCt int) {
 }
 
 // Log at warn level
+// Deprecated: Use zap logging
 func Warn(v ...any) {
 	if LogLevel >= 2 {
 		DoLog(3, WARN, fmt.Sprint(v...))
@@ -252,6 +265,7 @@ func Warn(v ...any) {
 }
 
 // Warn log formatted
+// Deprecated: Use zap logging
 func Warnf(format string, v ...any) {
 	if LogLevel >= 2 {
 		DoLog(3, WARN, fmt.Sprintf(format, v...))
@@ -259,6 +273,7 @@ func Warnf(format string, v ...any) {
 }
 
 // Warn log formatted context writer
+// Deprecated: Use zap logging
 func WarnCtx(ctx context.Context, format string, v ...any) {
 	if LogLevel >= 2 {
 		lc := FromContext(ctx)
@@ -270,6 +285,7 @@ func WarnCtx(ctx context.Context, format string, v ...any) {
 }
 
 // Warn Trace
+// Deprecated: Use zap logging
 func WarnT(lineCt int) {
 	if LogLevel >= 2 {
 		DoLog(3, WARN, fmt.Sprint("\n", PrettyStack(lineCt)))
@@ -277,6 +293,7 @@ func WarnT(lineCt int) {
 }
 
 // Log at error level
+// Deprecated: Use zap logging
 func Error(v ...any) {
 	if LogLevel >= 1 {
 		DoLog(3, ERROR, fmt.Sprint(v...))
@@ -284,6 +301,7 @@ func Error(v ...any) {
 }
 
 // Error log formatted
+// Deprecated: Use zap logging
 func Errorf(format string, v ...any) {
 	if LogLevel >= 1 {
 		DoLog(3, ERROR, fmt.Sprintf(format, v...))
@@ -291,6 +309,7 @@ func Errorf(format string, v ...any) {
 }
 
 // Error log formatted context writer
+// Deprecated: Use zap logging
 func ErrorCtx(ctx context.Context, format string, v ...any) {
 	if LogLevel >= 1 {
 		lc := FromContext(ctx)
@@ -302,6 +321,7 @@ func ErrorCtx(ctx context.Context, format string, v ...any) {
 }
 
 // Log this error, and return error object
+// Deprecated: Use zap logging
 func LogErrorf(format string, v ...any) error {
 	err := fmt.Errorf(format, v...)
 	if LogLevel >= 1 {
@@ -313,6 +333,8 @@ func LogErrorf(format string, v ...any) error {
 // Log to logger if setup
 //
 //	Log(ERROR, "message")
+//
+// Deprecated: Use zap logging
 func Log(logLvl int, v ...any) {
 	if LogLevel >= logLvl {
 		DoLog(3, logLvl, fmt.Sprint(v...))
@@ -322,6 +344,8 @@ func Log(logLvl int, v ...any) {
 // Log to logger if setup, grab a stack trace and add that as well
 //
 //	u.LogTracef(u.ERROR, "message %s", varx)
+//
+// Deprecated: Use zap logging
 func LogTracef(logLvl int, format string, v ...any) {
 	if LogLevel >= logLvl {
 		// grab a stack trace
@@ -339,6 +363,8 @@ func LogTracef(logLvl int, format string, v ...any) {
 // Log to logger if setup, grab a stack trace and add that as well
 //
 //	u.LogTracef(u.ERROR, "message %s", varx)
+//
+// Deprecated: Use zap logging
 func LogTraceDf(logLvl, lineCt int, format string, v ...any) {
 	if LogLevel >= logLvl {
 		// grab a stack trace
@@ -364,6 +390,7 @@ func LogTraceDf(logLvl, lineCt int, format string, v ...any) {
 }
 
 // PrettyStack is a helper to pull stack-trace, prettify it.
+// Deprecated: Use zap logging
 func PrettyStack(lineCt int) string {
 	stackBuf := make([]byte, 10000)
 	stackBufLen := runtime.Stack(stackBuf, false)
@@ -467,12 +494,15 @@ func doLogThrottle(depth, logLvl, limit int, key, msg string) {
 // Logf to logger if setup
 //
 //	Logf(ERROR, "message %d", 20)
+//
+// Deprecated: Use zap logging
 func Logf(logLvl int, format string, v ...any) {
 	if LogLevel >= logLvl {
 		DoLog(3, logLvl, fmt.Sprintf(format, v...))
 	}
 }
 
+// Deprecated: Use zap logging
 func LogFieldsf(logLvl int, fields map[string]any, format string, v ...any) {
 	if LogLevel >= logLvl {
 		DoLogFields(3, logLvl, fmt.Sprintf(format, v...), fields)
@@ -482,22 +512,26 @@ func LogFieldsf(logLvl int, fields map[string]any, format string, v ...any) {
 // Log to logger if setup
 //
 //	LogP(ERROR, "prefix", "message", anyItems, youWant)
+//
+// Deprecated: Use zap logging
 func LogP(logLvl int, prefix string, v ...any) {
 	if ErrLogLevel >= logLvl && loggerErr != nil {
-		loggerErr.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprint(v...)+postFix)
+		_ = loggerErr.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprint(v...)+postFix)
 	} else if LogLevel >= logLvl && logger != nil {
-		logger.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprint(v...)+postFix)
+		_ = logger.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprint(v...)+postFix)
 	}
 }
 
 // Log to logger if setup with a prefix
 //
 //	LogPf(ERROR, "prefix", "formatString %s %v", anyItems, youWant)
+//
+// Deprecated: Use zap logging
 func LogPf(logLvl int, prefix string, format string, v ...any) {
 	if ErrLogLevel >= logLvl && loggerErr != nil {
-		loggerErr.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprintf(format, v...)+postFix)
+		_ = loggerErr.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprintf(format, v...)+postFix)
 	} else if LogLevel >= logLvl && logger != nil {
-		logger.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprintf(format, v...)+postFix)
+		_ = logger.Output(3, prefix+LogPrefix[logLvl]+fmt.Sprintf(format, v...)+postFix)
 	}
 }
 
@@ -513,6 +547,8 @@ func LogPf(logLvl int, prefix string, format string, v ...any) {
 //	        // we want log line to show line that called this assert, not this line
 //	        LogD(5, DEBUG, v...)
 //	    }
+//
+// Deprecated: Use zap logging
 func LogD(depth int, logLvl int, v ...any) {
 	if LogLevel >= logLvl {
 		DoLog(depth, logLvl, fmt.Sprint(v...))
@@ -520,11 +556,13 @@ func LogD(depth int, logLvl int, v ...any) {
 }
 
 // Low level log with depth , level, message and logger
+// Deprecated: Use zap logging
 func DoLog(depth, logLvl int, msg string) {
 	DoLogFields(depth+1, logLvl, msg, nil)
 }
 
 // LogCtx Low level log with depth , level, message and logger
+// Deprecated: Use zap logging
 func LogCtx(ctx context.Context, depth, logLvl int, format string, v ...any) {
 	if LogLevel >= logLvl {
 		msg := fmt.Sprintf(format, v...)
@@ -538,6 +576,7 @@ func LogCtx(ctx context.Context, depth, logLvl int, format string, v ...any) {
 
 // DoLogFields allows the inclusion of additional context for logrus logs
 // file and line number are included in the fields by default
+// Deprecated: Use zap logging
 func DoLogFields(depth, logLvl int, msg string, fields map[string]any) {
 
 	if escapeNewlines {
@@ -547,25 +586,14 @@ func DoLogFields(depth, logLvl int, msg string, fields map[string]any) {
 	if customLogger == nil {
 		// Use standard logger
 		if ErrLogLevel >= logLvl && loggerErr != nil {
-			loggerErr.Output(depth, LogPrefix[logLvl]+msg+postFix)
+			_ = loggerErr.Output(depth, LogPrefix[logLvl]+msg+postFix)
 		} else if LogLevel >= logLvl && logger != nil {
-			logger.Output(depth, LogPrefix[logLvl]+msg+postFix)
+			_ = logger.Output(depth, LogPrefix[logLvl]+msg+postFix)
 		}
 	} else {
 		customLogger.Log(depth, logLvl, msg, fields)
 	}
 }
-
-type winsize struct {
-	Row    uint16
-	Col    uint16
-	Xpixel uint16
-	Ypixel uint16
-}
-
-const (
-	_TIOCGWINSZ = 0x5413 // OSX 1074295912
-)
 
 // http://play.golang.org/p/5LIA41Iqfp
 // Dummy discard, satisfies io.Writer without importing io or os.
