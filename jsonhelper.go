@@ -134,7 +134,7 @@ func (j *JsonHelper) DecodeSpanner(val any) (err error) {
 
 func NewJsonHelper(b []byte) JsonHelper {
 	jh := make(JsonHelper)
-	json.Unmarshal(b, &jh)
+	_ = json.Unmarshal(b, &jh)
 	return jh
 }
 
@@ -146,7 +146,7 @@ func NewJsonHelperReader(r io.Reader) (jh JsonHelper, err error) {
 
 func NewJsonHelpers(b []byte) []JsonHelper {
 	var jhl []JsonHelper
-	json.Unmarshal(MakeJsonList(b), &jhl)
+	_ = json.Unmarshal(MakeJsonList(b), &jhl)
 	return jhl
 }
 
